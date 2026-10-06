@@ -6,6 +6,7 @@
     "Central", "Northside", "Eastgate", "West End", "Riverside", "Maplewood",
     "South Market", "Hillcrest", "Harbor Point", "Oak Terrace", "Cedar Grove", "Lakeside"
   ];
+  const myBranch = "Central";
   const templates = [
     { title: "Family Storytime", type: "Kids & families", description: "Songs, picture books, and activities for young children and caregivers.", time: "10:30 AM", tone: "#E9D4F8", motif: "book" },
     { title: "Author Talk: The Places We Keep", type: "Author talk", description: "A conversation with a local writer followed by audience questions.", time: "6:00 PM", tone: "#DED3F4", motif: "mic" },
@@ -123,6 +124,7 @@
   });
 
   const state = {
+    scope: "all",
     branches: new Set(branches),
     timeframe: "week",
     status: "all",
@@ -143,6 +145,9 @@
   const branchPanel = byId("branchPanel");
   const branchTrigger = byId("branchTrigger");
   const branchOptions = byId("branchOptions");
+  const actionPanel = byId("actionPanel");
+  const actionTrigger = byId("actionTrigger");
+  const actionOptions = byId("actionOptions");
   const searchInput = byId("searchInput");
   function artworkMarkup(event) {
     if (event.missingArt) {
@@ -224,7 +229,7 @@
     return (state.sort === "earliest" ? dateDifference : -dateDifference) || a.branch.localeCompare(b.branch);
   }
   function filteredEvents() {
-    if (!state.branches.size || rangeIssue()) return [];
+    if ((state.scope === "all" && !state.branches.size) || rangeIssue()) return [];
     return events.filter(function (event) {
       return matchesOtherFilters(event) && actionMatches(event);
     }).sort(compareEvents);
@@ -233,7 +238,7 @@
     return matchesScopeAndSearch(event) && withinTimeframe(event);
   }
   function matchesScopeAndSearch(event) {
-    if (!state.branches.has(event.branch)) return false;
+    if (state.scope === "mine" ? event.branch !== myBranch : !state.branches.has(event.branch)) return false;
     if (state.status !== "all" && event.status !== state.status) return false;
     if (state.searchCategory && event.type !== state.searchCategory) return false;
     const haystack = (event.title + " " + event.type + " " + event.description + " " + event.branch).toLowerCase();
@@ -250,6 +255,11 @@
     byId("selectedBranchCount").textContent = state.branches.size + " selected";
   }
   function syncControls() {
+    document.querySelectorAll("[data-scope]").forEach(function (button) {
+      button.setAttribute("aria-pressed", button.getAttribute("data-scope") === state.scope ? "true" : "false");
+    });
+    byId("branchField").hidden = state.scope === "mine";
+    document.querySelector(".filter-grid").classList.toggle("is-my-branch", state.scope === "mine");
     byId("timeframeSelect").value = state.timeframe;
     byId("statusSelect").value = state.status;
     byId("sortSelect").value = state.sort;
@@ -263,29 +273,29 @@
     else if (state.branches.size < branches.length) branchLabel = state.branches.size + " branches selected";
     byId("branchValue").textContent = branchLabel;
     syncBranchOptions();
+    const actionLabels = { needs: "Needs attention", overdue: "Past due", confirm: "Confirm details", materials: "Prepare materials", followup: "Follow up" };
+    const selectedActions = Array.from(state.actions);
+    byId("actionValue").textContent = selectedActions.length === 0 ? "Any action" : selectedActions.length === 1 ? actionLabels[selectedActions[0]] : selectedActions.length + " actions selected";
+    actionOptions.querySelectorAll("input[type=checkbox]").forEach(function (input) {
+      input.checked = state.actions.has(input.value);
+      input.closest(".action-option").classList.toggle("is-selected", input.checked);
+    });
   }
   function renderScope() {
-    const count = state.branches.size;
+    const count = state.scope === "mine" ? 1 : state.branches.size;
     const scope = byId("scopeLabel");
-    const description = byId("pageDescription");
-    const actionTasks = { needs: "Find events that need attention", overdue: "Find past-due work", confirm: "Find details to confirm", materials: "Find materials to prepare", followup: "Find follow-ups" };
-    const selectedAction = state.actions.size === 1 ? Array.from(state.actions)[0] : "";
-    const task = state.actions.size > 1 ? "Find events with selected actions" : actionTasks[selectedAction] || (state.timeframe === "past" ? "Revisit past events" : state.timeframe === "week" ? "Find what matters this week" : "Browse events");
-    if (count === branches.length) {
+    if (state.scope === "mine") {
+      scope.textContent = "MY BRANCH · " + myBranch.toUpperCase();
+    } else if (count === branches.length) {
       scope.textContent = "SYSTEM-WIDE VIEW";
-      description.textContent = task + " across your library system.";
     } else if (count === 1) {
       const branch = Array.from(state.branches)[0];
       scope.textContent = branch.toUpperCase() + " BRANCH";
-      description.textContent = task + " at " + branch + ".";
     } else if (count === 0) {
       scope.textContent = "NO BRANCHES SELECTED";
-      description.textContent = "Choose a branch to see its events.";
     } else {
       scope.textContent = count + " BRANCHES SELECTED";
-      description.textContent = task + " across selected branches.";
     }
-    byId("scopeReset").hidden = count === branches.length;
   }
   function quickCounts() {
     const scoped = events.filter(function (event) { return matchesScopeAndSearch(event) && actionMatches(event); });
@@ -298,20 +308,16 @@
       button.classList.toggle("is-selected", active);
       button.setAttribute("aria-pressed", active ? "true" : "false");
     });
-    const cardEvents = rangeIssue() ? [] : events.filter(matchesOtherFilters);
+    const actionEvents = rangeIssue() ? [] : events.filter(matchesOtherFilters);
     const actionCounts = {
-      needs: cardEvents.filter(function (event) { return !!event.action; }).length,
-      overdue: cardEvents.filter(isOverdue).length,
-      confirm: cardEvents.filter(function (event) { return !!event.action && event.action.type === "confirm"; }).length,
-      materials: cardEvents.filter(function (event) { return !!event.action && event.action.type === "materials"; }).length,
-      followup: cardEvents.filter(function (event) { return !!event.action && event.action.type === "followup"; }).length
+      needs: actionEvents.filter(function (event) { return !!event.action; }).length,
+      overdue: actionEvents.filter(isOverdue).length,
+      confirm: actionEvents.filter(function (event) { return !!event.action && event.action.type === "confirm"; }).length,
+      materials: actionEvents.filter(function (event) { return !!event.action && event.action.type === "materials"; }).length,
+      followup: actionEvents.filter(function (event) { return !!event.action && event.action.type === "followup"; }).length
     };
     const actionCountIds = { needs: "actionNeedsCount", overdue: "actionOverdueCount", confirm: "actionConfirmCount", materials: "actionMaterialsCount", followup: "actionFollowupCount" };
-    document.querySelectorAll(".action-card").forEach(function (card) {
-      const action = card.getAttribute("data-action");
-      const active = state.actions.has(action);
-      card.classList.toggle("is-active", active);
-      card.querySelector(".action-checkbox").checked = active;
+    Object.keys(actionCounts).forEach(function (action) {
       byId(actionCountIds[action]).textContent = actionCounts[action];
     });
   }
@@ -320,7 +326,7 @@
   }
   function renderActiveFilters() {
     const chips = [];
-    if (state.branches.size !== branches.length) {
+    if (state.scope === "all" && state.branches.size !== branches.length) {
       const label = state.branches.size === 0 ? "No branches" : state.branches.size === 1 ? Array.from(state.branches)[0] : state.branches.size + " branches";
       chips.push(chip(label, "branches"));
     }
@@ -351,15 +357,15 @@
   }
   function resultsDescription(count) {
     const timeframeLabels = { week: "this week", next7: "in the next 7 days", next30: "in the next 30 days", past: "before today", all: "across all dates", custom: "in the selected date range" };
-    const scope = state.branches.size === branches.length ? "the library system" : state.branches.size === 1 ? Array.from(state.branches)[0] : state.branches.size + " branches";
-    return count + " matching " + (count === 1 ? "event" : "events") + " " + timeframeLabels[state.timeframe] + " across " + scope + ".";
+    const scope = state.scope === "mine" ? "at " + myBranch : state.branches.size === branches.length ? "across the library system" : state.branches.size === 1 ? "at " + Array.from(state.branches)[0] : "across " + state.branches.size + " branches";
+    return count + " matching " + (count === 1 ? "event" : "events") + " " + timeframeLabels[state.timeframe] + " " + scope + ".";
   }
   function renderEmpty() {
     const empty = byId("emptyState");
     let title = "No events match these filters";
     let message = "Try a wider timeframe or remove a filter to bring events back into view.";
     let button = "Reset filters";
-    if (!state.branches.size) { title = "Choose a branch to see events"; message = "Select one or more branches to browse their schedules."; button = "Select all branches"; }
+    if (state.scope === "all" && !state.branches.size) { title = "Choose a branch to see events"; message = "Select one or more branches to browse their schedules."; button = "Select all branches"; }
     else if (rangeIssue()) { title = "Check the custom dates"; message = rangeIssue(); button = "Use this week"; }
     empty.innerHTML = "<div class='empty-icon' aria-hidden='true'>⌕</div><h3>" + escapeHtml(title) + "</h3><p>" + escapeHtml(message) + "</p><button type='button' id='emptyAction'>" + escapeHtml(button) + "</button>";
     empty.hidden = false;
@@ -405,9 +411,20 @@
     branchPanel.hidden = true;
     branchTrigger.setAttribute("aria-expanded", "false");
   }
+  function closeActionPanel() {
+    actionPanel.hidden = true;
+    actionTrigger.setAttribute("aria-expanded", "false");
+  }
   function openBranchPanel() {
+    if (state.scope === "mine") return;
+    closeActionPanel();
     branchPanel.hidden = false;
     branchTrigger.setAttribute("aria-expanded", "true");
+  }
+  function openActionPanel() {
+    closeBranchPanel();
+    actionPanel.hidden = false;
+    actionTrigger.setAttribute("aria-expanded", "true");
   }
   function markManual() {
     state.page = 1;
@@ -428,6 +445,7 @@
     state.page = 1;
     searchInput.value = "";
     closeBranchPanel();
+    closeActionPanel();
     render();
   }
   function selectTimeframe(timeframe) {
@@ -478,7 +496,8 @@
       return found;
     });
     if (matchedBranches.length) {
-      state.branches = new Set(matchedBranches);
+      if (state.scope === "mine" && (matchedBranches.length !== 1 || matchedBranches[0] !== myBranch)) state.scope = "all";
+      if (state.scope === "all") state.branches = new Set(matchedBranches);
       tags.push(matchedBranches.length === 1 ? matchedBranches[0] : matchedBranches.length + " branches");
     }
     if (consumeAny(["this week"])) { state.timeframe = "week"; tags.push("This week"); }
@@ -516,17 +535,25 @@
     state.searchRaw = raw;
     state.page = 1;
     closeBranchPanel();
+    closeActionPanel();
     render();
   }
 
   buildBranchOptions();
   byId("todayLabel").textContent = formatLongDate(today);
-  byId("scopeReset").addEventListener("click", function () { state.branches = new Set(branches); markManual(); render(); });
+  document.querySelectorAll("[data-scope]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      state.scope = button.getAttribute("data-scope");
+      closeBranchPanel();
+      markManual();
+      render();
+    });
+  });
   document.querySelectorAll("[data-timeframe]").forEach(function (button) {
     button.addEventListener("click", function () { selectTimeframe(button.getAttribute("data-timeframe")); });
   });
-  document.querySelector(".action-grid").addEventListener("change", function (event) {
-    if (!event.target.matches(".action-checkbox")) return;
+  actionOptions.addEventListener("change", function (event) {
+    if (!event.target.matches("input[type=checkbox]")) return;
     if (event.target.checked) state.actions.add(event.target.value);
     else state.actions.delete(event.target.value);
     markManual();
@@ -536,6 +563,10 @@
   branchTrigger.addEventListener("click", function () {
     if (branchPanel.hidden) openBranchPanel();
     else closeBranchPanel();
+  });
+  actionTrigger.addEventListener("click", function () {
+    if (actionPanel.hidden) openActionPanel();
+    else closeActionPanel();
   });
   branchOptions.addEventListener("change", function (event) {
     if (!event.target.matches("input[type=checkbox]")) return;
@@ -578,12 +609,12 @@
   });
   byId("emptyState").addEventListener("click", function (event) {
     if (!event.target.closest("#emptyAction")) return;
-    if (!state.branches.size) { state.branches = new Set(branches); render(); }
+    if (state.scope === "all" && !state.branches.size) { state.branches = new Set(branches); render(); }
     else if (rangeIssue()) { state.timeframe = "week"; render(); }
     else resetFilters();
   });
   document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") { closeBranchPanel(); return; }
+    if (event.key === "Escape") { closeBranchPanel(); closeActionPanel(); return; }
     const target = event.target;
     const typing = target && (target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(target.tagName));
     if (!typing && (event.key === "/" || ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k"))) {

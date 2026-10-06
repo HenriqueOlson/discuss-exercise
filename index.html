@@ -52,23 +52,19 @@
 
       <div class="page-content">
         <div class="page-heading">
-          <div><div class="page-overline"><span id="scopeLabel">SYSTEM-WIDE VIEW</span><span class="overline-separator" aria-hidden="true">•</span> EVENTS</div><h1>Events</h1><p id="pageDescription">Find what matters this week across your library system.</p></div>
-          <button class="scope-reset" id="scopeReset" type="button" hidden>View all branches</button>
+          <div class="page-overline"><span id="scopeLabel">SYSTEM-WIDE VIEW</span><span class="overline-separator" aria-hidden="true">•</span> EVENTS</div>
+          <h1>Events</h1>
+          <div class="scope-switch-row">
+            <span class="scope-control-label" id="scopeControlLabel">VIEW EVENTS FOR</span>
+            <div class="scope-switch" role="group" aria-labelledby="scopeControlLabel">
+              <button type="button" data-scope="mine" aria-pressed="false" aria-label="My branch, Central">My branch</button>
+              <button type="button" data-scope="all" aria-pressed="true">All branches</button>
+            </div>
+          </div>
         </div>
 
-        <section class="action-section" aria-labelledby="actionHeading">
-          <div class="action-heading"><div><h2 id="actionHeading">Action to take</h2><p>Select one or more actions. Events matching any selection appear below.</p></div><button class="top-reset" id="topResetFilters" type="button">Reset filters</button></div>
-          <div class="action-grid" role="group" aria-label="Action to take filter">
-            <label class="action-card" data-action="needs"><span class="action-card-top"><strong>Needs attention</strong><input class="action-checkbox" type="checkbox" value="needs"></span><span class="action-card-bottom"><span id="actionNeedsCount">—</span> events with an open action</span></label>
-            <label class="action-card" data-action="overdue"><span class="action-card-top"><strong>Past due</strong><input class="action-checkbox" type="checkbox" value="overdue"></span><span class="action-card-bottom"><span id="actionOverdueCount">—</span> events with overdue work</span></label>
-            <label class="action-card" data-action="confirm"><span class="action-card-top"><strong>Confirm details</strong><input class="action-checkbox" type="checkbox" value="confirm"></span><span class="action-card-bottom"><span id="actionConfirmCount">—</span> events to confirm</span></label>
-            <label class="action-card" data-action="materials"><span class="action-card-top"><strong>Prepare materials</strong><input class="action-checkbox" type="checkbox" value="materials"></span><span class="action-card-bottom"><span id="actionMaterialsCount">—</span> events to prepare for</span></label>
-            <label class="action-card" data-action="followup"><span class="action-card-top"><strong>Follow up</strong><input class="action-checkbox" type="checkbox" value="followup"></span><span class="action-card-bottom"><span id="actionFollowupCount">—</span> events to follow up on</span></label>
-          </div>
-        </section>
-
         <section class="browse-panel" aria-label="Browse events">
-          <div class="browse-heading"><div><h2>Browse events</h2><p>Use filters together to narrow the same event list.</p></div></div>
+          <div class="browse-heading"><div><h2>Browse events</h2><p>Use filters together to narrow the same event list.</p></div><button class="top-reset" id="topResetFilters" type="button">Reset filters</button></div>
 
           <form class="smart-search" id="searchForm" role="search">
             <span class="search-mark" aria-hidden="true">✦</span>
@@ -76,18 +72,29 @@
             <input id="searchInput" type="search" autocomplete="off" placeholder="Try “kids events at Central this week needing attention”">
             <button type="submit">Search <span aria-hidden="true">→</span></button>
           </form>
-          <p class="search-helper">Try a title, branch, or phrase. Search can apply timeframe, status, event type, and the action cards above.</p>
+          <p class="search-helper">Try a title, branch, or phrase. Search can apply timeframe, status, event type, and actions.</p>
           <div class="search-feedback" id="searchFeedback" role="status" aria-live="polite" hidden></div>
 
           <div class="filter-grid">
-            <div class="filter-field branch-field"><span class="filter-label">Branch</span><button class="filter-control branch-trigger" id="branchTrigger" type="button" aria-expanded="false" aria-controls="branchPanel"><span id="branchValue">All 12 branches</span><svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="m3.5 5.2 3.5 3.5 3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+            <div class="filter-field branch-field" id="branchField"><span class="filter-label" id="branchFilterLabel">Branch</span><button class="filter-control branch-trigger" id="branchTrigger" type="button" aria-labelledby="branchFilterLabel branchValue" aria-expanded="false" aria-controls="branchPanel"><span id="branchValue">All 12 branches</span><svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="m3.5 5.2 3.5 3.5 3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
             <div class="filter-field"><label for="timeframeSelect">Timeframe</label><div class="select-wrap"><select class="filter-control" id="timeframeSelect"><option value="week">This week</option><option value="next7">Next 7 days</option><option value="next30">Next 30 days</option><option value="past">Past events</option><option value="all">All time</option><option value="custom">Custom dates</option></select></div></div>
             <div class="filter-field"><label for="statusSelect">Status</label><div class="select-wrap"><select class="filter-control" id="statusSelect"><option value="all">All statuses</option><option value="Planning">Planning</option><option value="Upcoming">Upcoming</option><option value="Happening">Happening now</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select></div></div>
+            <div class="filter-field"><span class="filter-label" id="actionFilterLabel">Action to take</span><button class="filter-control branch-trigger" id="actionTrigger" type="button" aria-labelledby="actionFilterLabel actionValue" aria-expanded="false" aria-controls="actionPanel"><span id="actionValue">Any action</span><svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="m3.5 5.2 3.5 3.5 3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
           </div>
           <div class="branch-panel" id="branchPanel" hidden>
             <div class="branch-panel-head"><div><strong>Select branches</strong><p>Select one branch or compare several branches.</p></div><span id="selectedBranchCount">12 selected</span></div>
             <div class="branch-panel-actions"><button type="button" id="selectAllBranches">Select all</button><button type="button" id="clearAllBranches">Clear selection</button></div>
             <div class="branch-options" id="branchOptions"></div>
+          </div>
+          <div class="action-panel" id="actionPanel" hidden>
+            <div class="branch-panel-head"><div><strong>Select actions</strong><p>Events matching any selected action will appear below.</p></div></div>
+            <div class="action-options" id="actionOptions" role="group" aria-label="Action to take filters">
+              <label class="action-option"><input type="checkbox" value="needs"><span>Needs attention</span><small id="actionNeedsCount">—</small></label>
+              <label class="action-option"><input type="checkbox" value="overdue"><span>Past due</span><small id="actionOverdueCount">—</small></label>
+              <label class="action-option"><input type="checkbox" value="confirm"><span>Confirm details</span><small id="actionConfirmCount">—</small></label>
+              <label class="action-option"><input type="checkbox" value="materials"><span>Prepare materials</span><small id="actionMaterialsCount">—</small></label>
+              <label class="action-option"><input type="checkbox" value="followup"><span>Follow up</span><small id="actionFollowupCount">—</small></label>
+            </div>
           </div>
           <div class="custom-range" id="customRange" hidden><div class="filter-field"><label for="startDate">From</label><input class="filter-control" id="startDate" type="date"></div><div class="filter-field"><label for="endDate">To</label><input class="filter-control" id="endDate" type="date"></div><span id="rangeError" role="alert"></span></div>
           <div class="active-filter-row" id="activeFilterRow" aria-live="polite"></div>

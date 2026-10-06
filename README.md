@@ -8,8 +8,8 @@ Open `index.html` in a browser. There is no build step, server, or external depe
 
 ## What you can explore
 
-- Select multiple action-to-take cards to see events matching any selected action.
-- Filter by one or more branches, timeframe, and event status.
+- Switch between My branch and All branches.
+- Filter by one or more branches, timeframe, event status, and multiple actions to take.
 - Try a natural-language search phrase to apply filters and find matching events.
 - Sort the event list by latest or earliest date and time, and move through pages.
 - Explore empty results, custom date validation, cancelled events, overdue actions, and missing artwork.
